@@ -9,6 +9,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
         rel="stylesheet">
+    <!--  <meta http-equiv="refresh" content="5"> <!-- GPT, para auto-refresh -->
     <title>ESP32 WebServer</title>
 </head>
 
@@ -26,7 +27,7 @@
                     style="max-width: 100%; max-height: 100%; width: 56%; padding: 10% 0">
                 <div class="subtasksensor">
                     <p style="font-size: 2fr; margin-bottom: 0;">Temperatura</p>
-                    <p style="font-size: 2rem; margin-top: 10%">5C</p>
+                    <p style="font-size: 2rem; margin-top: 10%">%TEMP%</p>
                 </div>
             </div>
 
@@ -35,7 +36,7 @@
                     style="max-width: 100%; max-height: 100%; width: 55%; padding: 10% 0">
                 <div class="subtasksensor">
                     <p style="font-size: 2fr; margin-bottom: 0;">Humidade</p>
-                    <p style="font-size: 2rem; margin-top: 10%">5C</p>
+                    <p style="font-size: 2rem; margin-top: 10%">%HUM%</p>
                 </div>
             </div>
 
@@ -47,7 +48,7 @@
                     style="max-width: 100%; max-height: 100%; width: 80%; padding: 15% 0">
                 <div class="subtasksensor">
                     <p style="font-size: 2fr; margin-bottom: 0;">CO1 levels</p>
-                    <p style="font-size: 2rem; margin-top: 10%">55</p>
+                    <p style="font-size: 2rem; margin-top: 10%">%CO%</p>
                 </div>
             </div>
         </div>
@@ -57,7 +58,7 @@
                     style="max-width: 100%; max-height: 100%; width: 80%; padding: 25% 0;">
                 <div class="subtasksensor">
                     <p style="font-size: 2fr; margin-bottom: 0;">Altitude</p>
-                    <p style="font-size: 2rem; margin-top: 10%">55</p>
+                    <p style="font-size: 2rem; margin-top: 10%">%ALT%</p>
                 </div>
             </div>
             <div class="taskSensor">
@@ -65,7 +66,26 @@
                     style="max-width: 100%; max-height: 100%; width: 60%; ; padding: 10% 0;">
                 <div class="subtasksensor">
                     <p style="font-size: 2fr; margin-bottom: 0;">Pressão</p>
-                    <p style="font-size: 2rem; margin-top: 10%">100</p>
+                    <p style="font-size: 2rem; margin-top: 10%">%PRESS%</p>
+                </div>
+            </div>
+        </div>
+        <div class="tasksSensores">
+            <div class="taskSensor" style="column-gap: 2%;">
+                <img src="fan-svgrepo-com.svg" alt="Fan"
+                    style="max-width: 100%; max-height: 100%; width: 80%; padding: 0 0;">
+                <div class="subtasksensor">
+                    <p style="font-size: 2fr; margin-bottom: 0;">Ventoinha</p>
+                    <p style="font-size: 2rem; margin-top: 10%">%FAN_STATUS%</p>
+                </div>
+            </div>
+            <div class="taskSensor">
+                <form action="/relay/toggle" method="POST">
+                    <button class="releBut">%RELAY_ACTION%</button>
+                </form>
+                <div class="subtasksensor">
+                    <p style="font-size: 2fr; margin-bottom: 0;">Relé</p>
+                    <p style="font-size: 2rem; margin-top: 10%">%RELAY_STATUS%</p>
                 </div>
             </div>
         </div>
