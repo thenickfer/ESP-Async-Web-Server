@@ -1,0 +1,45 @@
+body {
+    background-color: #111324;
+    color: #faeecd;
+    font-family: 'Inter', sans-serif;
+}
+
+header {
+    display: flex;
+  justify-content: center; 
+  align-items: center;
+  flex-direction: column;
+}
+
+.headerDiv {
+    display: flex;
+    justify-content: center; 
+    align-items: center;
+    width: 90%;
+    height: 80%;
+    padding:  2% 5%;
+    background-color: #1d1f3b;
+
+}
+
+.tasksSensores {
+    display: grid;
+    width: 100%;
+    height: fit-content;
+    grid-template-columns: auto auto auto;
+    background-color: #1d1f3b;
+}
+
+.taskSensor {
+    display: grid;
+    grid-template-columns: 30% 70%;
+    width: 100%;
+    height: 100%;
+}
+
+.subtasksensor {
+    display: grid;
+    grid-template-rows: 30% 70%;
+    width: 100%;
+    height: 100%;
+}
