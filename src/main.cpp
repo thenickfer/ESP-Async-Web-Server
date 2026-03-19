@@ -4,8 +4,8 @@
 #include "FS.h"
 #include "SPIFFS.h"
 
-const char *ssid = "sla";
-const char *password = "0123456789";
+const char *ssid = "iPhone (7)";
+const char *password = "12345678";
 AsyncWebServer server(80);
 const gpio_num_t led = GPIO_NUM_2;
 const gpio_num_t RELAY_PIN = led; // GPIO_NUM_32; //por enquanto led
@@ -188,7 +188,7 @@ void setup()
   Serial.print("IP: ");
   Serial.println(WiFi.localIP());
 
-  server.serveStatic("/", SPIFFS, "/");
+ 
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
             { request->send(SPIFFS, "/index.html", "text/html", false, processor); });
@@ -250,6 +250,8 @@ void setup()
     xSemaphoreGive(sensorsMutex);
     request->send(200, "text/plain", r ? "Ligado" : "Desligado"); });
 
+  server.serveStatic("/", SPIFFS, "/");
+
   server.begin();
 
   xTaskCreatePinnedToCore(taskDHT22, "taskTemp", 2048, nullptr, 1, nullptr, 1);
@@ -260,5 +262,17 @@ void setup()
 
 void loop()
 {
+  if(WiFi.status() != WL_CONNECTED){
+    WiFi.begin(ssid, password);
+    Serial.print("Conectando ao WiFi");
+    while (WiFi.status() != WL_CONNECTED)
+    {
+      delay(100);
+      Serial.print(".");
+    }
+    Serial.println("\nWiFi Conectado");
+    Serial.print("IP: ");
+    }
+  Serial.println(WiFi.localIP());
   vTaskDelay(pdMS_TO_TICKS(10000));
 }
