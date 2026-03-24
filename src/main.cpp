@@ -3,6 +3,7 @@
 #include <ESPAsyncWebServer.h>
 #include "FS.h"
 #include "SPIFFS.h"
+#include <DHT.h>
 
 const char *ssid = "iPhone (7)";
 const char *password = "12345678";
@@ -10,7 +11,11 @@ AsyncWebServer server(80);
 const gpio_num_t led = GPIO_NUM_2;
 const gpio_num_t RELAY_PIN = led; // GPIO_NUM_32; //por enquanto led
 const gpio_num_t FAN_PIN = GPIO_NUM_4;
+const gpio_num_t DHT_PIN = GPIO_NUM_35;
+const uint8_t DHT_TYPE = DHT22;
+const gpio_num_t MQ07_PIN = GPIO_NUM_34;
 
+DHT dht(DHT_PIN, DHT_TYPE);
 float temp = 0.0f;
 float umid = 0.0f;
 float co = 0.0f;
@@ -19,7 +24,10 @@ float press = 0.0f;
 bool fan_status = 0;
 bool relay_status = 0;
 
-SemaphoreHandle_t sensorsMutex = nullptr; // semaforo para evitar conflitos em updates
+SemaphoreHandle_t tempUmidMutex = nullptr; // semaforo para evitar conflitos em updates
+SemaphoreHandle_t coMutex = nullptr;
+SemaphoreHandle_t altPressMutex = nullptr;
+SemaphoreHandle_t relayMutex = nullptr;
 
 void fan_setStatus(bool newStatus)
 {
@@ -27,19 +35,14 @@ void fan_setStatus(bool newStatus)
   gpio_set_level(FAN_PIN, fan_status);
 }
 
-void lerTemp()
-{
-  temp = random(0, 400) / 10.0f;
-}
-
-void lerUmid()
-{
-  umid = random(0, 1000) / 10.0f;
-}
-
 void lerCO()
 {
-  co = random(0, 1000) / 10.0f;
+  float voltage = analogRead(MQ07_PIN) * (3.3 / 4095.0); //Formula GPT para converter leitura do sensor para ppm
+  float RL = 10.0; // load resistor in kΩ (check your module!)
+  float Rs = ((3.3 - voltage) / voltage) * RL;
+  float R0 = Rs / 27.0;
+  float ratio = Rs / R0;
+  co = pow(10, ((-1.497 * log10(ratio)) + 1.487));
 }
 
 void lerAlt()
@@ -54,10 +57,10 @@ void lerPress()
 
 void alternarRele()
 {
-  xSemaphoreTake(sensorsMutex, portMAX_DELAY);
+  xSemaphoreTake(relayMutex, portMAX_DELAY);
   relay_status = !relay_status;
   gpio_set_level(RELAY_PIN, relay_status);
-  xSemaphoreGive(sensorsMutex);
+  xSemaphoreGive(relayMutex);
 }
 
 void taskDHT22(void *pvParameters)
@@ -65,10 +68,10 @@ void taskDHT22(void *pvParameters)
   (void)pvParameters;
   for (;;)
   {
-    xSemaphoreTake(sensorsMutex, portMAX_DELAY);
-    lerTemp();
-    lerUmid();
-    xSemaphoreGive(sensorsMutex);
+    xSemaphoreTake(tempUmidMutex, portMAX_DELAY);
+    temp = dht.readTemperature();
+    umid = dht.readHumidity();
+    xSemaphoreGive(tempUmidMutex);
     vTaskDelay(pdMS_TO_TICKS(1000));
   }
 }
@@ -78,9 +81,9 @@ void taskMQ07(void *pvParameters)
   (void)pvParameters;
   for (;;)
   {
-    xSemaphoreTake(sensorsMutex, portMAX_DELAY);
+    xSemaphoreTake(coMutex, portMAX_DELAY);
     lerCO();
-    xSemaphoreGive(sensorsMutex);
+    xSemaphoreGive(coMutex);
     vTaskDelay(pdMS_TO_TICKS(1000));
   }
 }
@@ -90,10 +93,10 @@ void taskMPL3115A2(void *pvParameters)
   (void)pvParameters;
   for (;;)
   {
-    xSemaphoreTake(sensorsMutex, portMAX_DELAY);
+    xSemaphoreTake(altPressMutex, portMAX_DELAY);
     lerAlt();
     lerPress();
-    xSemaphoreGive(sensorsMutex);
+    xSemaphoreGive(altPressMutex);
     vTaskDelay(pdMS_TO_TICKS(2000));
   }
 }
@@ -103,7 +106,7 @@ void TaskVentila(void *pvParameters)
   (void)pvParameters;
   for (;;)
   {
-    xSemaphoreTake(sensorsMutex, portMAX_DELAY);
+    xSemaphoreTake(tempUmidMutex, portMAX_DELAY);
     if (temp > 30.0f)
     {
       fan_setStatus(1);
@@ -112,7 +115,7 @@ void TaskVentila(void *pvParameters)
     {
       fan_setStatus(0);
     }
-    xSemaphoreGive(sensorsMutex);
+    xSemaphoreGive(tempUmidMutex);
     vTaskDelay(pdMS_TO_TICKS(500));
   }
 }
@@ -123,7 +126,10 @@ String processor(const String &var)
   float t, h, c, a, p;
   bool f, r;
 
-  xSemaphoreTake(sensorsMutex, portMAX_DELAY);
+  xSemaphoreTake(tempUmidMutex, portMAX_DELAY);
+  xSemaphoreTake(relayMutex, portMAX_DELAY);
+  xSemaphoreTake(coMutex, portMAX_DELAY);
+  xSemaphoreTake(altPressMutex, portMAX_DELAY);
   t = temp;
   h = umid;
   c = co;
@@ -131,7 +137,10 @@ String processor(const String &var)
   p = press;
   f = fan_status;
   r = relay_status;
-  xSemaphoreGive(sensorsMutex);
+  xSemaphoreGive(altPressMutex);
+  xSemaphoreGive(coMutex);
+  xSemaphoreGive(relayMutex);
+  xSemaphoreGive(tempUmidMutex);
 
   if (var == "TEMP")
     return String(t, 1) + " C";
@@ -155,7 +164,7 @@ String processor(const String &var)
 void setup()
 {
   Serial.begin(115200);
-
+  dht.begin();
   gpio_set_direction(led, GPIO_MODE_OUTPUT);
   gpio_set_direction(RELAY_PIN, GPIO_MODE_OUTPUT);
   gpio_set_direction(FAN_PIN, GPIO_MODE_OUTPUT);
@@ -163,9 +172,17 @@ void setup()
   gpio_set_level(led, 0);
   gpio_set_level(RELAY_PIN, 0);
   gpio_set_level(FAN_PIN, 0);
+  xSemaphoreGive(altPressMutex);
+  xSemaphoreGive(coMutex);
+  xSemaphoreGive(relayMutex);
+  xSemaphoreGive(tempUmidMutex);
 
-  sensorsMutex = xSemaphoreCreateMutex();
-  if (sensorsMutex == nullptr)
+
+  altPressMutex = xSemaphoreCreateMutex();
+  coMutex = xSemaphoreCreateMutex();
+  relayMutex = xSemaphoreCreateMutex();
+  tempUmidMutex = xSemaphoreCreateMutex();
+  if (altPressMutex == nullptr || coMutex == nullptr || relayMutex == nullptr || tempUmidMutex == nullptr)
   {
     Serial.println("Falha ao criar mutex");
     return;
@@ -199,55 +216,55 @@ void setup()
   server.on("/temp", HTTP_GET, [](AsyncWebServerRequest *request)
             {
       float t;
-      xSemaphoreTake(sensorsMutex, portMAX_DELAY);
+      xSemaphoreTake(tempUmidMutex, portMAX_DELAY);
       t = temp;
-      xSemaphoreGive(sensorsMutex);
+      xSemaphoreGive(tempUmidMutex);
       request-> send(200, "text/plain", String(t, 1)) ; });
   server.on("/umid", HTTP_GET, [](AsyncWebServerRequest *request)
             {
       float h;
-      xSemaphoreTake(sensorsMutex, portMAX_DELAY);
+      xSemaphoreTake(tempUmidMutex, portMAX_DELAY);
       h = umid;
-      xSemaphoreGive(sensorsMutex);
+      xSemaphoreGive(tempUmidMutex);
       request->send(200, "text/plain", String(h, 1)); });
   server.on("/co", HTTP_GET, [](AsyncWebServerRequest *request)
             {
     float c;
-    xSemaphoreTake(sensorsMutex, portMAX_DELAY);
+    xSemaphoreTake(coMutex, portMAX_DELAY);
     c = co;
-    xSemaphoreGive(sensorsMutex);
+    xSemaphoreGive(coMutex);
     request->send(200, "text/plain", String(c, 1)); });
 
   server.on("/alt", HTTP_GET, [](AsyncWebServerRequest *request)
             {
     float a;
-    xSemaphoreTake(sensorsMutex, portMAX_DELAY);
+    xSemaphoreTake(altPressMutex, portMAX_DELAY);
     a = alt;
-    xSemaphoreGive(sensorsMutex);
+    xSemaphoreGive(altPressMutex);
     request->send(200, "text/plain", String(a, 1)); });
 
   server.on("/press", HTTP_GET, [](AsyncWebServerRequest *request)
             {
     float p;
-    xSemaphoreTake(sensorsMutex, portMAX_DELAY);
+    xSemaphoreTake(altPressMutex, portMAX_DELAY);
     p = press;
-    xSemaphoreGive(sensorsMutex);
+    xSemaphoreGive(altPressMutex);
     request->send(200, "text/plain", String(p, 1)); });
 
   server.on("/fan", HTTP_GET, [](AsyncWebServerRequest *request)
             {
     bool f;
-    xSemaphoreTake(sensorsMutex, portMAX_DELAY);
+    xSemaphoreTake(tempUmidMutex, portMAX_DELAY);
     f = fan_status;
-    xSemaphoreGive(sensorsMutex);
+    xSemaphoreGive(tempUmidMutex);
     request->send(200, "text/plain", f ? "Ligada" : "Desligada"); });
 
   server.on("/relay", HTTP_GET, [](AsyncWebServerRequest *request)
             {
     bool r;
-    xSemaphoreTake(sensorsMutex, portMAX_DELAY);
+    xSemaphoreTake(relayMutex, portMAX_DELAY);
     r = relay_status;
-    xSemaphoreGive(sensorsMutex);
+    xSemaphoreGive(relayMutex);
     request->send(200, "text/plain", r ? "Ligado" : "Desligado"); });
 
   server.serveStatic("/", SPIFFS, "/");
