@@ -4,6 +4,7 @@
 #include "FS.h"
 #include "SPIFFS.h"
 #include <DHT.h>
+#include <Adafruit_MPL3115A2.h>
 
 const char *ssid = "iPhone (7)";
 const char *password = "12345678";
@@ -11,11 +12,15 @@ AsyncWebServer server(80);
 const gpio_num_t led = GPIO_NUM_2;
 const gpio_num_t RELAY_PIN = led; // GPIO_NUM_32; //por enquanto led
 const gpio_num_t FAN_PIN = GPIO_NUM_4;
-const gpio_num_t DHT_PIN = GPIO_NUM_35;
+const gpio_num_t DHT_PIN = GPIO_NUM_32;
 const uint8_t DHT_TYPE = DHT22;
 const gpio_num_t MQ07_PIN = GPIO_NUM_34;
+const gpio_num_t I2C_SDA = GPIO_NUM_21;
+const gpio_num_t I2C_SCL = GPIO_NUM_22;
 
 DHT dht(DHT_PIN, DHT_TYPE);
+Adafruit_MPL3115A2 baro = Adafruit_MPL3115A2();
+
 float temp = 0.0f;
 float umid = 0.0f;
 float co = 0.0f;
@@ -37,22 +42,12 @@ void fan_setStatus(bool newStatus)
 
 void lerCO()
 {
-  float voltage = analogRead(MQ07_PIN) * (3.3 / 4095.0); //Formula GPT para converter leitura do sensor para ppm
-  float RL = 10.0; // load resistor in kΩ (check your module!)
+  float voltage = analogRead(MQ07_PIN) * (3.3 / 4095.0); // Formula GPT para converter leitura do sensor para ppm
+  float RL = 10.0;                                       // load resistor in kΩ (check your module!)
   float Rs = ((3.3 - voltage) / voltage) * RL;
   float R0 = Rs / 27.0;
   float ratio = Rs / R0;
   co = pow(10, ((-1.497 * log10(ratio)) + 1.487));
-}
-
-void lerAlt()
-{
-  alt = random(0, 1000) / 10.0f;
-}
-
-void lerPress()
-{
-  press = random(0, 1000) / 10.0f;
 }
 
 void alternarRele()
@@ -94,8 +89,8 @@ void taskMPL3115A2(void *pvParameters)
   for (;;)
   {
     xSemaphoreTake(altPressMutex, portMAX_DELAY);
-    lerAlt();
-    lerPress();
+    alt = baro.getAltitude();
+    press = baro.getPressure() / 100.0f;
     xSemaphoreGive(altPressMutex);
     vTaskDelay(pdMS_TO_TICKS(2000));
   }
@@ -172,11 +167,6 @@ void setup()
   gpio_set_level(led, 0);
   gpio_set_level(RELAY_PIN, 0);
   gpio_set_level(FAN_PIN, 0);
-  xSemaphoreGive(altPressMutex);
-  xSemaphoreGive(coMutex);
-  xSemaphoreGive(relayMutex);
-  xSemaphoreGive(tempUmidMutex);
-
 
   altPressMutex = xSemaphoreCreateMutex();
   coMutex = xSemaphoreCreateMutex();
@@ -194,6 +184,13 @@ void setup()
     return;
   }
 
+  Wire.begin(I2C_SDA, I2C_SCL);
+  if (!baro.begin())
+  {
+    Serial.println("MPL3115A2 not found!");
+    return;
+  }
+
   WiFi.begin(ssid, password);
   Serial.print("Conectando ao WiFi");
   while (WiFi.status() != WL_CONNECTED)
@@ -204,8 +201,6 @@ void setup()
   Serial.println("\nWiFi Conectado");
   Serial.print("IP: ");
   Serial.println(WiFi.localIP());
-
- 
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
             { request->send(SPIFFS, "/index.html", "text/html", false, processor); });
@@ -279,7 +274,8 @@ void setup()
 
 void loop()
 {
-  if(WiFi.status() != WL_CONNECTED){
+  if (WiFi.status() != WL_CONNECTED)
+  {
     WiFi.begin(ssid, password);
     Serial.print("Conectando ao WiFi");
     while (WiFi.status() != WL_CONNECTED)
@@ -289,7 +285,7 @@ void loop()
     }
     Serial.println("\nWiFi Conectado");
     Serial.print("IP: ");
-    }
+  }
   Serial.println(WiFi.localIP());
   vTaskDelay(pdMS_TO_TICKS(10000));
 }
