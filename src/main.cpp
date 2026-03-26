@@ -11,8 +11,8 @@ const char *password = "12345678";
 AsyncWebServer server(80);
 const gpio_num_t led = GPIO_NUM_2;
 const gpio_num_t RELAY_PIN = led; // GPIO_NUM_32; //por enquanto led
-const gpio_num_t FAN_PIN = GPIO_NUM_4;
-const gpio_num_t DHT_PIN = GPIO_NUM_32;
+const gpio_num_t FAN_PIN = GPIO_NUM_10;
+const gpio_num_t DHT_PIN = GPIO_NUM_4;
 const uint8_t DHT_TYPE = DHT22;
 const gpio_num_t MQ07_PIN = GPIO_NUM_34;
 const gpio_num_t I2C_SDA = GPIO_NUM_21;
@@ -137,11 +137,15 @@ String processor(const String &var)
   xSemaphoreGive(relayMutex);
   xSemaphoreGive(tempUmidMutex);
 
+  if (var == "RELAY_ACTION")
+    return r ? "Desligar" : "Ligar";
+    if (var == "RELAY_STATUS")
+      return r ? "Ligado" : "Desligado";
   if (var == "TEMP")
     return String(t, 1) + " C";
   if (var == "HUM")
-    return String(h, 1) + " %";
-  if (var == "CO")
+    return String(h, 1) ;
+  if (var == "GAS")
     return String(c) + " ppm";
   if (var == "ALT")
     return String(a, 1) + " m";
@@ -149,16 +153,22 @@ String processor(const String &var)
     return String(p, 1) + " hPa";
   if (var == "FAN_STATUS")
     return f ? "Ligada" : "Desligada";
-  if (var == "RELAY_STATUS")
-    return r ? "Ligado" : "Desligado";
-  if (var == "RELAY_ACTION")
-    return r ? "Desligar" : "Ligar";
   return String();
 }
 
 void setup()
 {
   Serial.begin(115200);
+  WiFi.begin(ssid, password);
+  Serial.print("Conectando ao WiFi");
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(100);
+    Serial.print("a.");
+  }
+  Serial.println("\nWiFi Conectado");
+  Serial.print("IP: ");
+  Serial.println(WiFi.localIP());
   dht.begin();
   gpio_set_direction(led, GPIO_MODE_OUTPUT);
   gpio_set_direction(RELAY_PIN, GPIO_MODE_OUTPUT);
@@ -191,24 +201,13 @@ void setup()
     return;
   }
 
-  WiFi.begin(ssid, password);
-  Serial.print("Conectando ao WiFi");
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    delay(100);
-    Serial.print(".");
-  }
-  Serial.println("\nWiFi Conectado");
-  Serial.print("IP: ");
-  Serial.println(WiFi.localIP());
-
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
             { request->send(SPIFFS, "/index.html", "text/html", false, processor); });
   server.on("/relay/toggle", HTTP_POST, [](AsyncWebServerRequest *request)
             {
               alternarRele();
               request->redirect("/"); });
-  server.on("/temp", HTTP_GET, [](AsyncWebServerRequest *request)
+  /* server.on("/temp", HTTP_GET, [](AsyncWebServerRequest *request)
             {
       float t;
       xSemaphoreTake(tempUmidMutex, portMAX_DELAY);
@@ -260,7 +259,7 @@ void setup()
     xSemaphoreTake(relayMutex, portMAX_DELAY);
     r = relay_status;
     xSemaphoreGive(relayMutex);
-    request->send(200, "text/plain", r ? "Ligado" : "Desligado"); });
+    request->send(200, "text/plain", r ? "Ligado" : "Desligado"); }); */
 
   server.serveStatic("/", SPIFFS, "/");
 
@@ -269,7 +268,7 @@ void setup()
   xTaskCreatePinnedToCore(taskDHT22, "taskTemp", 2048, nullptr, 1, nullptr, 1);
   xTaskCreatePinnedToCore(taskMQ07, "taskCO", 2048, nullptr, 1, nullptr, 1);
   xTaskCreatePinnedToCore(taskMPL3115A2, "taskAlt", 2048, nullptr, 1, nullptr, 1);
-  xTaskCreatePinnedToCore(TaskVentila, "taskFan", 2048, nullptr, 1, nullptr, 1);
+  xTaskCreatePinnedToCore(TaskVentila, "taskFan", 2048, nullptr, 1, nullptr, 1); 
 }
 
 void loop()

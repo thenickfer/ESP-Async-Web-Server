@@ -1,0 +1,64 @@
+html{
+    font-family: Arial;
+    text-align: center;
+}
+header{
+    text-align: center;
+}
+
+header img{
+    width: 200px;
+    height: auto;
+}
+
+h1{
+    color: #0F3376;
+    padding: 10px;
+    text-decoration: blink;
+}
+
+p{
+    font-size: 1.5rem; /*relativo ao tamanho da fointe*/
+}
+body{
+    background-color:cornflowerblue;
+}
+
+button{
+    width: 200px;
+    border-radius: 40px;
+    border: none;
+    color: white;
+    font-size: 30px;
+
+    padding: 16px;
+    margin: 5px;
+    cursor: pointer;
+}
+
+.button1
+{
+    background-color: blue;
+}
+
+.button2
+{
+    background-color: red;
+}
+.button1:hover
+{
+    background-color: aqua;
+}
+.button2:hover
+{
+    background-color: aqua;
+}
+
+footer{
+    text-align: center;
+}
+
+footer img{
+    width: 200px;
+    height: auto;
+}

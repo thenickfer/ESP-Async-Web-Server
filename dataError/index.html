@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
+        rel="stylesheet">
+    <meta http-equiv="refresh" content="5"> <!-- GPT, para auto-refresh -->
+    <title>ESP32 WebServer</title>
+</head>
+
+<body>
+    <header>
+        <div class="headerDiv">
+            <h2>ESP32 Async WebServer</h2>
+        </div>
+        <div style="width: 100%; height: 2px; background-color: grey;"> </div>
+    </header>
+    <div style="display: grid; grid-template-rows: 20% 20% 20% 40%; height: 100%; width: 100%; padding: 5% 0;">
+        <div class="tasksSensores">
+            <div class="taskSensor">
+                <img src="thermometer.svg" alt="thermometer"
+                    style="max-width: 100%; max-height: 100%; width: 56%; padding: 10% 0">
+                <div class="subtasksensor">
+                    <p style="font-size: 2rem; margin-bottom: 0;">Temperatura</p>
+                    <p style="font-size: 2rem; margin-top: 10%">%TEMP%</p>
+                </div>
+            </div>
+
+            <div class="taskSensor">
+                <img src="drop.svg" alt="Water drop"
+                    style="max-width: 100%; max-height: 100%; width: 55%; padding: 10% 0">
+                <div class="subtasksensor">
+                    <p style="font-size: 2rem; margin-bottom: 0;">Humidade</p>
+                    <p style="font-size: 2rem; margin-top: 10%">%HUM%</p>
+                </div>
+            </div>
+
+
+        </div>
+        <div class="tasksSensores" style="grid-template-columns: auto;">
+            <div class="taskSensor">
+                <img src="gas.svg" alt="Gas Mask"
+                    style="max-width: 100%; max-height: 100%; width: 80%; padding: 15% 0">
+                <div class="subtasksensor">
+                    <p style="font-size: 2rem; margin-bottom: 0;">CO1 levels</p>
+                    <p style="font-size: 2rem; margin-top: 10%">%CO%</p>
+                </div>
+            </div>
+        </div>
+        <div class="tasksSensores">
+            <div class="taskSensor" style="column-gap: 2%;">
+                <img src="mountain.svg" alt="Mountain"
+                    style="max-width: 100%; max-height: 100%; width: 80%; padding: 25% 0;">
+                <div class="subtasksensor">
+                    <p style="font-size: 2rem; margin-bottom: 0;">Altitude</p>
+                    <p style="font-size: 2rem; margin-top: 10%">%ALT%</p>
+                </div>
+            </div>
+            <div class="taskSensor">
+                <img src="pressure.svg" alt="Pressure meter"
+                    style="max-width: 100%; max-height: 100%; width: 60%; ; padding: 10% 0;">
+                <div class="subtasksensor">
+                    <p style="font-size: 2rem; margin-bottom: 0;">Pressão</p>
+                    <p style="font-size: 2rem; margin-top: 10%">%PRESS%</p>
+                </div>
+            </div>
+        </div>
+        <div class="tasksSensores">
+            <div class="taskSensor" style="column-gap: 2%;">
+                <img src="fan.svg" alt="Fan"
+                    style="max-width: 100%; max-height: 100%; width: 80%; padding: 0 0;">
+                <div class="subtasksensor">
+                    <p style="font-size: 2rem; margin-bottom: 0;">Ventoinha</p>
+                    <p style="font-size: 2rem; margin-top: 10%">%FAN_STATUS%</p>
+                </div>
+            </div>
+            <div class="taskSensor">
+                <form action="/relay/toggle" method="POST">
+                    <button class="releBut">%RELAY_ACTION%</button>
+                </form>
+                <div class="subtasksensor">
+                    <p style="font-size: 2rem; margin-bottom: 0;">Relé</p>
+                    <p style="font-size: 2rem; margin-top: 10%">%RELAY_STATUS%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer>
+        <div style="height: 2vh;" class="headerDiv">
+            <h3>Feito por Nícolas da Costa Ferreira, PUCRS, 2026</h2>
+        </div>
+    </footer>
+</body>
+
+</html>
