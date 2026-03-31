@@ -16,7 +16,9 @@ h1{
     padding: 10px;
     text-decoration: blink;
 }
-
+p img{
+    width: 40px;
+}
 p{
     font-size: 1.5rem; /*relativo ao tamanho da fointe*/
 }
@@ -25,14 +27,14 @@ body{
 }
 
 button{
-    width: 200px;
+    width: 40%;
     border-radius: 40px;
     border: none;
     color: white;
-    font-size: 30px;
+    font-size: 24px;
 
     padding: 16px;
-    margin: 5px;
+    
     cursor: pointer;
 }
 
