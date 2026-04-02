@@ -10,8 +10,8 @@ const char *ssid = "iPhone (7)";
 const char *password = "12345678";
 AsyncWebServer server(80);
 const gpio_num_t led = GPIO_NUM_2;
-const gpio_num_t RELAY_PIN = led; // GPIO_NUM_32; //por enquanto led
-const gpio_num_t FAN_PIN = GPIO_NUM_10;
+const gpio_num_t RELAY_PIN = led;
+const gpio_num_t FAN_PIN = GPIO_NUM_32;
 const gpio_num_t DHT_PIN = GPIO_NUM_4;
 const uint8_t DHT_TYPE = DHT22;
 const gpio_num_t MQ07_PIN = GPIO_NUM_34;
@@ -265,8 +265,8 @@ void setup()
 
   server.begin();
 
-  xTaskCreatePinnedToCore(taskDHT22, "taskTemp", 2048, nullptr, 1, nullptr, 1);
-  xTaskCreatePinnedToCore(taskMQ07, "taskCO", 2048, nullptr, 1, nullptr, 1);
+  xTaskCreatePinnedToCore(taskDHT22, "taskTemp", 2048, nullptr, 1, nullptr, 0);
+  xTaskCreatePinnedToCore(taskMQ07, "taskCO", 2048, nullptr, 1, nullptr, 0);
   xTaskCreatePinnedToCore(taskMPL3115A2, "taskAlt", 2048, nullptr, 1, nullptr, 1);
   xTaskCreatePinnedToCore(TaskVentila, "taskFan", 2048, nullptr, 1, nullptr, 1); 
 }
